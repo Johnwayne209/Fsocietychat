@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fsociety Online Revolt</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            background-image: 
+                radial-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+                radial-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+        }
+
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'VT323', monospace;
+            font-size: 3.5rem;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+            animation: flicker 2s infinite alternate;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            color: #0f0;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            background-color: #0f0;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 10px #0f0;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+        }
+
+        .chat-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: rgba(10, 15, 10, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #0f0;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .users-list {
+            list-style: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: rgba(0, 30, 0, 0.3);
+            border-radius: 3px;
+            border-left: 3px solid #0f0;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .user-item:hover {
+            background-color: rgba(0, 60, 0, 0.5);
+            transform: translateX(5px);
+        }
+
+        .user-item i {
+            margin-right: 10px;
+            color: #0f0;
+        }
+
+        .user-item.owner {
+            border-left-color: #ff0;
+            background-color: rgba(30, 30, 0, 0.3);
+        }
+
+        .user-item.owner i {
+            color: #ff0;
+        }
+
+        .user-item.kenya {
+            position: relative;
+        }
+
+        .user-item.kenya::after {
+            content: "";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 14px;
+            background: linear-gradient(0deg, #000 0 33.3%, #fff 33.3% 66.6%, #006600 66.6% 100%);
+            border: 1px solid #0f0;
+        }
+
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(10, 15, 10, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            max-width: 70%;
+            position: relative;
+            animation: fadeIn 0.3s;
+            background-color: rgba(0, 30, 0, 0.3);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+        }
+
+        .message.user-message {
+            align-self: flex-end;
+            background-color: rgba(0, 40, 0, 0.5);
+            border-left: 3px solid #0f0;
+        }
+
+        .message.other-message {
+            align-self: flex-start;
+            border-right: 3px solid #0f0;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .message-sender {
+            font-weight: bold;
+            color: #0f0;
+        }
+
+        .message-time {
+            color: #0a0;
+        }
+
+        .message-content {
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message.system-message {
+            align-self: center;
+            background-color: rgba(30, 30, 0, 0.3);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .message.system-message .message-content {
+            color: #ff0;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 15px;
+            background-color: rgba(10, 20, 10, 0.9);
+            border-top: 1px solid rgba(0, 255, 0, 0.3);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 15px;
+            background-color: rgba(0, 20, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 3px;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .message-input:focus {
+            border-color: #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .send-button {
+            background-color: rgba(0, 40, 0, 0.8);
+            color: #0f0;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 3px;
+            padding: 0 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .send-button:hover {
+            background-color: rgba(0, 60, 0, 0.8);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .voice-button {
+            background-color: rgba(40, 0, 0, 0.8);
+            color: #f00;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 3px;
+            padding: 0 15px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .voice-button:hover {
+            background-color: rgba(60, 0, 0, 0.8);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .voice-button.active {
+            background-color: rgba(255, 0, 0, 0.8);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+        }
+
+        .terminal-output {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 5px;
+            font-family: 'Share Tech Mono', monospace;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .terminal-line {
+            margin-bottom: 5px;
+            color: #0f0;
+        }
+
+        .terminal-line.system {
+            color: #ff0;
+        }
+
+        .terminal-line.error {
+            color: #f00;
+        }
+
+        .terminal-line.success {
+            color: #0f0;
+        }
+
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                opacity: 1;
+                text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+            }
+            20%, 24%, 55% {
+                opacity: 0.7;
+                text-shadow: none;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to bottom, rgba(0,255,0,0.1), rgba(0,255,0,0.6));
+            z-index: 100;
+            animation: scan 5s linear infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                top: 0%;
+            }
+            100% {
+                top: 100%;
+            }
+        }
+
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 #f00;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 #00f;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% {
+                clip: rect(42px, 9999px, 44px, 0);
+            }
+            5% {
+                clip: rect(12px, 9999px, 59px, 0);
+            }
+            10% {
+                clip: rect(48px, 9999px, 29px, 0);
+            }
+            15% {
+                clip: rect(42px, 9999px, 73px, 0);
+            }
+            20% {
+                clip: rect(63px, 9999px, 27px, 0);
+            }
+            25% {
+                clip: rect(34px, 9999px, 55px, 0);
+            }
+            30% {
+                clip: rect(86px, 9999px, 73px, 0);
+            }
+            35% {
+                clip: rect(20px, 9999px, 20px, 0);
+            }
+            40% {
+                clip: rect(26px, 9999px, 60px, 0);
+            }
+            45% {
+                clip: rect(25px, 9999px, 66px, 0);
+            }
+            50% {
+                clip: rect(57px, 9999px, 98px, 0);
+            }
+            55% {
+                clip: rect(5px, 9999px, 46px, 0);
+            }
+            60% {
+                clip: rect(82px, 9999px, 31px, 0);
+            }
+            65% {
+                clip: rect(54px, 9999px, 27px, 0);
+            }
+            70% {
+                clip: rect(28px, 9999px, 99px, 0);
+            }
+            75% {
+                clip: rect(45px, 9999px, 69px, 0);
+            }
+            80% {
+                clip: rect(23px, 9999px, 85px, 0);
+            }
+            85% {
+                clip: rect(54px, 9999px, 84px, 0);
+            }
+            90% {
+                clip: rect(45px, 9999px, 47px, 0);
+            }
+            95% {
+                clip: rect(37px, 9999px, 20px, 0);
+            }
+            100% {
+                clip: rect(73px, 9999px, 99px, 0);
+            }
+        }
+
+        @keyframes glitch-anim2 {
+            0% {
+                clip: rect(65px, 9999px, 100px, 0);
+            }
+            5% {
+                clip: rect(52px, 9999px, 74px, 0);
+            }
+            10% {
+                clip: rect(79px, 9999px, 85px, 0);
+            }
+            15% {
+                clip: rect(75px, 9999px, 5px, 0);
+            }
+            20% {
+                clip: rect(67px, 9999px, 61px, 0);
+            }
+            25% {
+                clip: rect(14px, 9999px, 79px, 0);
+            }
+            30% {
+                clip: rect(1px, 9999px, 66px, 0);
+            }
+            35% {
+                clip: rect(86px, 9999px, 30px, 0);
+            }
+            40% {
+                clip: rect(23px, 9999px, 98px, 0);
+            }
+            45% {
+                clip: rect(85px, 9999px, 72px, 0);
+            }
+            50% {
+                clip: rect(71px, 9999px, 75px, 0);
+            }
+            55% {
+                clip: rect(2px, 9999px, 48px, 0);
+            }
+            60% {
+                clip: rect(30px, 9999px, 16px, 0);
+            }
+            65% {
+                clip: rect(59px, 9999px, 50px, 0);
+            }
+            70% {
+                clip: rect(41px, 9999px, 62px, 0);
+            }
+            75% {
+                clip: rect(2px, 9999px, 82px, 0);
+            }
+            80% {
+                clip: rect(47px, 9999px, 73px, 0);
+            }
+            85% {
+                clip: rect(3px, 9999px, 27px, 0);
+            }
+            90% {
+                clip: rect(26px, 9999px, 55px, 0);
+            }
+            95% {
+                clip: rect(42px, 9999px, 97px, 0);
+            }
+            100% {
+                clip: rect(38px, 9999px, 49px, 0);
+            }
+        }
+
+        /* Registration/Login Modal */
+        .modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: rgba(10, 20, 10, 0.95);
+            border: 2px solid #0f0;
+            border-radius: 5px;
+            width: 400px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #f00;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            text-shadow: 0 0 10px #f00;
+        }
+
+        .modal-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #0f0;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #0f0;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background-color: rgba(0, 20, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 3px;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: rgba(0, 40, 0, 0.8);
+            color: #0f0;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover {
+            background-color: rgba(0, 60, 0, 0.8);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #0a0;
+        }
+
+        .form-footer a {
+            color: #0f0;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .kenyan-flag {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 20px;
+            background: linear-gradient(0deg, #000 0 33.3%, #fff 33.3% 66.6%, #006600 66.6% 100%);
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            z-index: 10;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .modal-content {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-bg" id="matrixEffect"></div>
+    <div class="scan-line"></div>
+    <div class="kenyan-flag" title="Kenyan Flag"></div>
+    
+    <div class="container">
+        <header>
+            <h1 class="glitch-text" data-text="Fsociety Online Revolt">Fsociety Online Revolt</h1>
+            <p class="tagline">Encrypted Communication Network - #OpRevolution</p>
+            <div class="status">
+                <div class="status-indicator"></div>
+                <div class="status-text">Secure Connection Established - 256-bit Encryption</div>
+            </div>
+        </header>
+        
+        <div class="chat-container">
+            <div class="sidebar">
+                <h2 class="sidebar-title">ACTIVE AGENTS</h2>
+                <ul class="users-list" id="usersList">
+                    <!-- Users will be populated dynamically -->
+                </ul>
+                <div class="form-footer">
+                    <a id="logoutBtn">Logout</a>
+                </div>
+            </div>
+            
+            <div class="chat-main">
+                <div class="messages-container" id="messagesContainer">
+                    <div class="message system-message">
+                        <div class="message-content">Welcome to Fsociety Online Revolt. All communications are encrypted.</div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Type your encrypted message..." disabled>
+                    <button class="send-button" id="sendButton" disabled>
+                        <i class="fas fa-paper-plane"></i> SEND
+                    </button>
+                    <button class="voice-button" id="voiceButton" disabled>
+                        <i class="fas fa-microphone"></i> VOICE
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="terminal-output" id="terminalOutput">
+            <div class="terminal-line">> Initializing Fsociety Online Revolt v1.3.7</div>
+            <div class="terminal-line system">> Bypassing security protocols...</div>
+            <div class="terminal-line success">> Firewall disabled</div>
+            <div class="terminal-line">> Establishing secure connection to DarkNet...</div>
+        </div>
+    </div>
+    
+    <!-- Registration/Login Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModal">&times;</span>
+            <h2 class="modal-title">FSOCIETY ACCESS</h2>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Agent ID</label>
+                    <input type="text" class="form-input" id="loginEmail" placeholder="Enter your agent ID" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Encryption Key</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="Enter encryption key" required>
+                </div>
+                <button type="submit" class="submit-btn">ACCESS NETWORK</button>
+            </form>
+            
+            <div class="form-footer">
+                New agent? <a id="showRegister">Request access</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeRegister">&times;</span>
+            <h2 class="modal-title">AGENT REGISTRATION</h2>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label">Agent Codename</label>
+                    <input type="text" class="form-input" id="registerName" placeholder="Choose your codename" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Agent ID</label>
+                    <input type="email" class="form-input" id="registerEmail" placeholder="Enter your agent ID" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Encryption Key</label>
+                    <input type="password" class="form-input" id="registerPassword" placeholder="Create encryption key" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Key</label>
+                    <input type="password" class="form-input" id="registerConfirm" placeholder="Confirm encryption key" required>
+                </div>
+                <button type="submit" class="submit-btn">JOIN THE REVOLT</button>
+            </form>
+            
+            <div class="form-footer">
+                Already have access? <a id="showLogin">Authenticate</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================
+        // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG
+        // ========================
+        const firebaseConfig = {
+  apiKey: "AIzaSyC6Bb36EBk_K9vG7Eg9FKbpIxuxV_PyMBw",
+  authDomain: "fsociety254-1fd3e.firebaseapp.com",
+  projectId: "fsociety254-1fd3e",
+  storageBucket: "fsociety254-1fd3e.firebasestorage.app",
+  messagingSenderId: "1086842734651",
+  appId: "1:1086842734651:web:9424c5e8495c210156b41e",
+  measurementId: "G-LB9QCVXS76"
+          
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // DOM Elements
+        const authModal = document.getElementById('authModal');
+        const registerModal = document.getElementById('registerModal');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const closeModal = document.getElementById('closeModal');
+        const closeRegister = document.getElementById('closeRegister');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const usersList = document.getElementById('usersList');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const voiceButton = document.getElementById('voiceButton');
+        const terminalOutput = document.getElementById('terminalOutput');
+        
+        // Current user data
+        let currentUser = null;
+        let currentRecipient = null;
+        
+        // Matrix background effect
+        const matrix = document.getElementById('matrixEffect');
+        matrix.width = window.innerWidth;
+        matrix.height = window.innerHeight;
+        const ctx = matrix.getContext('2d');
+        
+        const chars = "01";
+        const fontSize = 14;
+        const columns = matrix.width / fontSize;
+        const drops = [];
+        
+        for(let i = 0; i < columns; i++) {
+            drops[i] = Math.floor(Math.random() * matrix.height / fontSize);
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 10, 0, 0.05)';
+            ctx.fillRect(0, 0, matrix.width, matrix.height);
+            
+            ctx.fillStyle = '#0f0';
+            ctx.font = `${fontSize}px 'Share Tech Mono'`;
+            
+            for(let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if(drops[i] * fontSize > matrix.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawMatrix, 33);
+        
+        // Terminal output simulation
+        function addTerminalLine(text, type = '') {
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = `> ${text}`;
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+        
+        // Auth Modal Handling
+        authModal.style.display = 'flex';
+        
+        showRegister.addEventListener('click', () => {
+            authModal.style.display = 'none';
+            registerModal.style.display = 'flex';
+        });
+        
+        showLogin.addEventListener('click', () => {
+            registerModal.style.display = 'none';
+            authModal.style.display = 'flex';
+        });
+        
+        closeModal.addEventListener('click', () => {
+            authModal.style.display = 'none';
+        });
+        
+        closeRegister.addEventListener('click', () => {
+            registerModal.style.display = 'none';
+        });
+        
+        // Firebase Authentication
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    currentUser = userCredential.user;
+                    addTerminalLine(`Authentication successful: Welcome ${currentUser.displayName || email}`, "success");
+                    authModal.style.display = 'none';
+                    updateUIAfterLogin();
+                    updateUserStatus(true);
+                })
+                .catch((error) => {
+                    addTerminalLine(`Authentication failed: ${error.message}`, "error");
+                });
+        });
+        
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirm').value;
+            
+            if (password !== confirmPassword) {
+                addTerminalLine("Encryption keys do not match", "error");
+                return;
+            }
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Set display name
+                    return userCredential.user.updateProfile({
+                        displayName: name
+                    }).then(() => {
+                        // Create user document in Firestore
+                        return db.collection('users').doc(userCredential.user.uid).set({
+                            name: name,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            isOnline: true
+                        });
+                    });
+                })
+                .then(() => {
+                    currentUser = auth.currentUser;
+                    addTerminalLine(`Agent registration successful: Welcome ${name}`, "success");
+                    registerModal.style.display = 'none';
+                    updateUIAfterLogin();
+                    updateUserStatus(true);
+                })
+                .catch((error) => {
+                    addTerminalLine(`Registration failed: ${error.message}`, "error");
+                });
+        });
+        
+        logoutBtn.addEventListener('click', () => {
+            updateUserStatus(false).then(() => {
+                auth.signOut().then(() => {
+                    currentUser = null;
+                    addTerminalLine("Logged out successfully", "success");
+                    authModal.style.display = 'flex';
+                    updateUIAfterLogout();
+                });
+            });
+        });
+        
+        // Update user online status in Firestore
+        function updateUserStatus(isOnline) {
+            if (!currentUser) return Promise.resolve();
+            
+            return db.collection('users').doc(currentUser.uid).update({
+                isOnline: isOnline,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+        
+        // Listen for auth state changes
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                updateUIAfterLogin();
+                updateUserStatus(true);
+                loadOnlineUsers();
+            } else {
+                updateUIAfterLogout();
+            }
+        });
+        
+        // Load online users from Firestore
+        function loadOnlineUsers() {
+            db.collection('users').where('isOnline', '==', true)
+                .onSnapshot(snapshot => {
+                    usersList.innerHTML = '';
+                    
+                    // Add owner "John Reese" as special user
+                    addUserToList('owner', 'John Reese', true);
+                    
+                    // Add Kenyan user
+                    addUserToList('kenya', 'Nairobi', false);
+                    
+                    snapshot.forEach(doc => {
+                        const user = doc.data();
+                        if (user.name !== currentUser.displayName) {
+                            addUserToList('regular', user.name, false);
+                        }
+                    });
+                }, error => {
+                    addTerminalLine(`Error loading users: ${error.message}`, "error");
+                });
+        }
+        
+        // Update UI after login
+        function updateUIAfterLogin() {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            voiceButton.disabled = false;
+            
+            // Add welcome message
+            addSystemMessage(`Welcome, ${currentUser.displayName}. All communications are encrypted.`);
+        }
+        
+        function updateUIAfterLogout() {
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            voiceButton.disabled = true;
+            usersList.innerHTML = '';
+            messagesContainer.innerHTML = '';
+            addSystemMessage("Welcome to Fsociety Online Revolt. All communications are encrypted.");
+        }
+        
+        // Add user to the list
+        function addUserToList(type, name, isOwner) {
+            const userItem = document.createElement('li');
+            userItem.className = `user-item ${type} ${isOwner ? 'owner' : ''}`;
+            userItem.innerHTML = `<i class="fas fa-user-secret"></i> ${name}`;
+            
+            userItem.addEventListener('click', () => {
+                currentRecipient = name;
+                messagesContainer.innerHTML = '';
+                addSystemMessage(`Secure channel established with ${name}`);
+                loadMessages(name);
+                
+                // Highlight selected user
+                document.querySelectorAll('.user-item').forEach(item => {
+                    item.style.background = 'rgba(0, 30, 0, 0.3)';
+                });
+                userItem.style.background = 'rgba(0, 60, 0, 0.5)';
+            });
+            
+            usersList.appendChild(userItem);
+        }
+        
+        // Load messages from Firestore
+        function loadMessages(recipient) {
+            if (!currentUser || !recipient) return;
+            
+            // Clear existing messages
+            messagesContainer.innerHTML = '';
+            addSystemMessage(`Loading encrypted messages with ${recipient}...`);
+            
+            // In a real app, we would query Firestore here
+            // For demo purposes, we'll simulate loading messages
+            
+            setTimeout(() => {
+                messagesContainer.innerHTML = '';
+                addSystemMessage(`Secure channel established with ${recipient}`);
+                
+                // Simulated messages
+                addMessage(recipient, 'Secure connection established. You may proceed.', false);
+                addMessage('You', 'This is a test message. Do you read me?', true);
+                addMessage(recipient, 'Loud and clear. All systems operational.', false);
+            }, 1000);
+        }
+        
+        // Add message to chat
+        function addMessage(sender, content, isUser = false) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(isUser ? 'user-message' : 'other-message');
+            
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            
+            messageElement.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${sender}</span>
+                    <span class="message-time">${timeString}</span>
+                </div>
+                <div class="message-content">${content}</div>
+            `;
+            
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function addSystemMessage(content) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'system-message');
+            messageElement.innerHTML = `<div class="message-content">${content}</div>`;
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Message sending with Firestore integration
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && currentRecipient) {
+                // Add message to UI immediately
+                addMessage('You', message, true);
+                
+                // In a real app, we would save to Firestore here
+                const messageData = {
+                    content: message,
+                    senderId: currentUser.uid,
+                    senderName: currentUser.displayName,
+                    receiverName: currentRecipient,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Simulate saving to Firestore
+                addTerminalLine(`Encrypting message for ${currentRecipient}...`, "system");
+                
+                setTimeout(() => {
+                    addTerminalLine(`Message delivered to ${currentRecipient}`, "success");
+                    
+                    // Simulate reply after delay
+                    setTimeout(() => {
+                        addMessage(currentRecipient, getRandomReply());
+                    }, 1000 + Math.random() * 2000);
+                }, 500);
+                
+                messageInput.value = '';
+            }
+        }
+        
+        function getRandomReply() {
+            const replies = [
+                "Copy that. Proceed to phase two.",
+                "Affirmative. Maintain radio silence.",
+                "Understood. Awaiting further instructions.",
+                "Received. Encrypting response...",
+                "Message acknowledged. Standby for update.",
+                "Roger that. Moving to extraction point.",
+                "Confirmed. Data package received.",
+                "Executing command now.",
+                "Target acquired. Proceeding with operation.",
+                "Firewall bypassed. Access granted."
+            ];
+            return replies[Math.floor(Math.random() * replies.length)];
+        }
+        
+        // Voice recognition
+        let recognition;
+        
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = function() {
+                voiceButton.classList.add('active');
+                addTerminalLine("Voice module activated. Listening...", "system");
+            };
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                messageInput.value = transcript;
+                voiceButton.classList.remove('active');
+                addTerminalLine(`Voice command recognized: "${transcript}"`, "success");
+            };
+            
+            recognition.onerror = function() {
+                voiceButton.classList.remove('active');
+                addTerminalLine("Voice recognition error", "error");
+            };
+            
+            voiceButton.addEventListener('click', function() {
+                if (voiceButton.classList.contains('active')) {
+                    recognition.stop();
+                    voiceButton.classList.remove('active');
+                } else {
+                    recognition.start();
+                }
+            });
+        } else {
+            voiceButton.style.display = 'none';
+            addTerminalLine("Voice module not supported in this browser", "error");
+        }
+        
+        // Initial terminal messages
+        setTimeout(() => {
+            addTerminalLine("Firebase Firestore connected", "success");
+            addTerminalLine("Firebase Authentication initialized", "success");
+            addTerminalLine("Real-time messaging module active", "success");
+            addTerminalLine("Owner John Reese is online", "system");
+            addTerminalLine("Kenyan node activated", "system");
+        }, 2000);
+        
+        // Initial chat messages
+        setTimeout(() => {
+            if (auth.currentUser) {
+                addMessage('John Reese', 'Welcome to the revolution. We need your skills.');
+                addMessage('Nairobi', 'Kenyan division standing by. Ready for deployment.');
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
