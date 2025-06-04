@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Agent - FSOCIETY</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+    <div class="container">
+        <div class="header">
+            <h1>AGENT REGISTRATION</h1>
+            <div class="subtitle">FSOCIETY Secure Access Protocol</div>
+        </div>
+        
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label for="username">IDENTIFICATION</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="codename">OPERATIONAL CODENAME</label>
+                <input type="text" id="codename" name="codename" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">ACCESS CODE</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm-password">CONFIRM ACCESS CODE</label>
+                <input type="password" id="confirm-password" required>
+            </div>
+            
+            <button type="submit" class="auth-button">REGISTER AGENT</button>
+            <div class="form-footer">
+                <a href="login.html">Existing agent login</a>
+            </div>
+        </form>
+        
+        <div id="status-message" class="status-message"></div>
+    </div>
+    
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const codename = document.getElementById('codename').value;
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirm-password').value;
+            
+            if (password !== confirm) {
+                document.getElementById('status-message').textContent = 
+                    'ERROR: Access codes do not match.';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, codename, password })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Registration failed');
+                }
+                
+                document.getElementById('status-message').textContent = 
+                    'SUCCESS: Agent registered. Proceed to login.';
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } catch (error) {
+                document.getElementById('status-message').textContent = 
+                    `ERROR: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
